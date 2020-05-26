@@ -72,23 +72,23 @@ def binToStr(num):
 		numStr = numStr + '0'
 	return "".join(reversed(numStr))
 
-def RPi_Out(reg_blk):
-	rcv_blk = [[] for _ in range(0, n)]
-	# for i in range(0, n):
-	# 	for j in range(0, n):
-	# 		if reg_blk[i][j] == 1:
-	# 			GPIO.output(18, GPIO.HIGH)
-	# 		else:
-	# 			GPIO.output(18, GPIO.LOW)
-	# 		time.sleep(0.1)
-	# 		if(GPIO.input(4)):
-	# 			rcv_blk[i].append(1)
-	# 		else:
-	# 			rcv_blk[i].append(0)
-	# 		GPIO.output(18, GPIO.LOW)
-	rcv_blk = reg_blk
-	rcv_blk = np.transpose(rcv_blk)
-	BCH_Decoder(rcv_blk)
+# def RPi_Out(reg_blk):
+# 	rcv_blk = [[] for _ in range(0, n)]
+# 	# for i in range(0, n):
+# 	# 	for j in range(0, n):
+# 	# 		if reg_blk[i][j] == 1:
+# 	# 			GPIO.output(18, GPIO.HIGH)
+# 	# 		else:
+# 	# 			GPIO.output(18, GPIO.LOW)
+# 	# 		time.sleep(0.1)
+# 	# 		if(GPIO.input(4)):
+# 	# 			rcv_blk[i].append(1)
+# 	# 		else:
+# 	# 			rcv_blk[i].append(0)
+# 	# 		GPIO.output(18, GPIO.LOW)
+# 	rcv_blk = reg_blk
+# 	rcv_blk = np.transpose(rcv_blk)
+# 	BCH_Decoder(rcv_blk)
 
 def computeSyndrome(r):
 	global H
@@ -106,6 +106,7 @@ def BCH_Decoder(rcv_blk):
 	global syn_pat
 	global err_pat
 	corr_blk = [[] for _ in range(0, n)]
+	rcv_blk = np.transpose(rcv_blk)
 	for i in range(0, n):
 		syn = computeSyndrome(rcv_blk[i])
 		# print(str(syn))
@@ -124,50 +125,66 @@ def BCH_Decoder(rcv_blk):
 		corr_blk[i] = rcv_blk[i]
 
 	corr_blk = np.asarray(corr_blk).tolist()
-	print("Decoded Block:")
-	print(corr_blk)
+	# print("Decoded Block:")
+	return corr_blk
 
-	msg = []
-	msg_str = ""
-	for i in range(0, n):
-		msg = msg + corr_blk[i][n - k : ]
-		# print(msg)
-		val = 0
-		for j in range(0, 8):
-			val = val + msg[j] * (2 ** (7 - j))
-		msg_str = msg_str + chr(val)
-		if(val == 0):
-			break
-		msg = msg[8: ]
-	print(msg_str)
-
-
-string = input("Enter Message:")
+f = open("testText.txt", "r")
+string = f.readline()
+print(string)
+f.close()
 info_str = ""
 msg_count = 0
-reg_blk = [[] for _ in range(0, n)]
+msgBlock = []
+codewordBlock = []
 
+print("Total Number of Characters: ", len(string))
 for i in range(0, len(string)):
-	info_str = info_str + binToStr(ord(string[i]))
+	x = bin(ord(string[i]))[2:]
+	# print(x, string[i])
+	while len(x) < 7:
+		x = '0' + x
+	info_str = info_str + x
 
 while len(info_str) >= k:
-	reg_blk[msg_count] = BCH_Encoder(info_str[0:k])
+	msgBlock.append(info_str[0:k])
 	msg_count = msg_count + 1
 	info_str = info_str[k:len(info_str)]
 
 while len(info_str) < k:
 	info_str = info_str + '0'
 
-reg_blk[msg_count] = BCH_Encoder(info_str)
-msg_count = msg_count + 1
+msgBlock.append(info_str)
 
-ext = [0 for _ in range(0, n)]
-while msg_count < n:
-	reg_blk[msg_count] = ext
-	msg_count = msg_count + 1
+# print(msgBlock)
 
-reg_blk = np.transpose(reg_blk).tolist()
-print("Encoding Done with interleaving")
-print(reg_blk)
-# BCH_Decoder(reg_blk)
-RPi_Out(reg_blk)
+for m in msgBlock:
+	codewordBlock.append(BCH_Encoder(m))
+
+while len(codewordBlock) %n != 0:
+	codewordBlock.append([0 for _ in range(n)])
+
+# print(codewordBlock)
+print("Total Number of Encoded Blocks: ", int(len(codewordBlock)/n))
+print("Encoding Type: ", n, k)
+print()
+
+rcvMsg = []
+for i in range(0, len(codewordBlock), n):
+	corrBlock = BCH_Decoder(np.transpose(codewordBlock[i: i + n]).tolist())
+	for j in range(len(corrBlock)):
+		rcvMsg = rcvMsg + corrBlock[j][n - k: ]
+
+# print(rcvMsg)
+msgStr = ""
+zeros = [0 for _ in range(7)]
+for j in range(0, len(rcvMsg), 7):
+	x = rcvMsg[j: j + 7]
+	# print(x)
+	if x == zeros:
+		break
+	x = [str(m) for m in x]
+	msgStr = msgStr + chr(int("".join(x), 2))
+
+print(msgStr)
+
+# print(rcvMsg)
