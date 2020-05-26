@@ -1,14 +1,14 @@
 import numpy as np
 from sympy import *
+# import RPi.GPIO as GPIO
 import time
+import random
 
 # GPIO.setmode(GPIO.BCM)
 # GPIO.setwarnings(False)
 # GPIO.setup(18,GPIO.OUT)
 # GPIO.setup(4, GPIO.IN)
 
-
-start_time = time.time()
 n = 31
 k = 11
 gen = np.asarray([1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1])
@@ -146,6 +146,10 @@ for i in range(0, len(string)):
 		x = '0' + x
 	info_str = info_str + x
 
+# info = [random.randrange(2) for _ in range(k)]
+# info = [str(i) for i in info]
+# info_str = "".join(info)
+
 while len(info_str) >= k:
 	msgBlock.append(info_str[0:k])
 	msg_count = msg_count + 1
@@ -188,5 +192,4 @@ for j in range(0, len(rcvMsg), 7):
 
 print(msgStr)
 
-print("Execution Time: ", time.time() - start_time)
 # print(rcvMsg)
